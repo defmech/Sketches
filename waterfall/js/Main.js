@@ -19,32 +19,44 @@ Dog.Main = (function() {
 	var hero;
 	var sphere;
 	var animationSpeed = 2;
-	var elements = [];
+	var elementsBlue = [];
+	var elementsOrange = [];
 	var elementsContainer;
 
 	var ORIGIN = {
 		x: 0,
 		y: 0
 	}
-	var SPHERE_RADIUS = 14;
+	var SPHERE_RADIUS = 18;
 
 	var BOX_WIDTH = 400;
+	var BOX_DIMS = {
+		w: 360,
+		h: 600,
+		d: 40
+	}
 
-	var ELEMENTS_MAX = 72;
+	var OVERFLOW = BOX_DIMS.h / 2;
+
+	var ELEMENTS_MAX = 256;
 
 	var SCALE_MIN = 0.1;
 	var SCALE_MAX = 1;
 
+	var hueBlue = 204;
+	var hueOrange = 20;
+
 	var spotLight1;
 
+	var elementsContainer;
+	var waterfallBlue;
+	var waterfallOrange;
+
 	var SPHERE_GEOMETRY = new THREE.SphereBufferGeometry(SPHERE_RADIUS, 32, 32);
-	var SPHERE_MATERIAL = new THREE.MeshPhongMaterial({
-		color: 0xFBBC03,
-		shading: THREE.SmoothShading,
-		emissive: 0x000000,
-		specular: 0x666666,
-		shininess: 30,
-	});
+
+	var intervalBlue;
+	var intervalOrange;
+
 
 	function setup() {
 
@@ -55,9 +67,9 @@ Dog.Main = (function() {
 
 		// init camera
 		camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
-		camera.position.x = 400;
-		camera.position.y = 440;
-		camera.position.z = 400;
+		camera.position.x = 0;
+		camera.position.y = 0;
+		camera.position.z = 800;
 
 		// console.log('Main.js', camera.position);
 
@@ -71,6 +83,8 @@ Dog.Main = (function() {
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.autoClear = false;
 		renderer.shadowMap.enabled = true;
+		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+		// renderer.shadowMap.soft = true;
 
 		document.body.appendChild(renderer.domElement);
 
@@ -88,6 +102,18 @@ Dog.Main = (function() {
 			init();
 		});
 
+		// add container
+		elementsContainer = new THREE.Object3D();
+		scene.add(elementsContainer);
+
+		waterfallBlue = new THREE.Object3D();
+		waterfallBlue.position.x = (BOX_DIMS.w / 2) + 40;
+		elementsContainer.add(waterfallBlue);
+
+		waterfallOrange = new THREE.Object3D();
+		waterfallOrange.position.x = -((BOX_DIMS.w / 2) + 40);
+		elementsContainer.add(waterfallOrange);
+
 		if (USE_HELPERS) scene.add(new THREE.AxisHelper(500));
 	}
 
@@ -95,9 +121,10 @@ Dog.Main = (function() {
 
 		// add content
 		addLighting();
-		addFloor();
+		// addFloor();
 		addSkyBox();
-		addBox();
+		addBoxsTo(waterfallBlue);
+		addBoxsTo(waterfallOrange);
 		initAnimation();
 
 		// init keyboard listener
@@ -109,27 +136,50 @@ Dog.Main = (function() {
 
 	function initAnimation() {
 
-		setInterval(addElement, 500);
+		intervalBlue = setInterval(addElementBlue, 100);
+		intervalOrange = setInterval(addElementOrange, 100);
 	}
 
-	function animateElements() {
-		for (var i = 0; i < elements.length; i++) {
-			var element = elements[i];
+	function animateElementsBlue() {
+		for (var i = 0; i < elementsBlue.length; i++) {
+			var element = elementsBlue[i];
 
 			element.position.z += element.velocity.z;
 
-			if (element.position.z > (BOX_WIDTH / 2)) {
+			if (element.position.z > (BOX_DIMS.d / 2)) {
 				element.velocity.z *= 0.99;
 
-				if (element.position.y > -200) {
-					element.velocity.y -= 0.1;
+				if (element.position.y > -((BOX_DIMS.h / 2) + OVERFLOW)) {
+					// Falling
+					element.velocity.y -= (0.15 * (element.scale.x));
 					element.position.y += element.velocity.y;
 				} else {
 					element.restart();
 				}
 			} else {
-				element.scale.x = element.scale.y = element.scale.z = Dog.Utils.map(element.position.z, -(BOX_WIDTH / 2), (BOX_WIDTH / 2), SCALE_MIN, SCALE_MAX);
-				element.position.y = (BOX_WIDTH / 2) + (SPHERE_RADIUS * element.scale.x);
+				element.position.y = (BOX_DIMS.h / 2) + (SPHERE_RADIUS * element.scale.x);
+			}
+		}
+	}
+
+	function animateElementsOrange() {
+		for (var i = 0; i < elementsOrange.length; i++) {
+			var element = elementsOrange[i];
+
+			element.position.z += element.velocity.z;
+
+			if (element.position.z > (BOX_DIMS.d / 2)) {
+				element.velocity.z *= 0.99;
+
+				if (element.position.y < ((BOX_DIMS.h / 2) + OVERFLOW)) {
+					// Falling up
+					element.velocity.y += (0.15 * (element.scale.x));
+					element.position.y += element.velocity.y;
+				} else {
+					element.restart();
+				}
+			} else {
+				element.position.y = -(BOX_DIMS.h / 2) - (SPHERE_RADIUS * element.scale.x);
 			}
 		}
 	}
@@ -138,7 +188,7 @@ Dog.Main = (function() {
 	function initKeyboard() {
 		// listen for keystrokes
 		document.body.addEventListener("keyup", function(event) {
-			console.info('event.keyCode', event.keyCode);
+			// console.info('event.keyCode', event.keyCode);
 
 			switch (event.keyCode) {
 				case 80: // p
@@ -180,17 +230,17 @@ Dog.Main = (function() {
 	function addLighting() {
 
 		// Add a light
-		spotLight1 = new THREE.DirectionalLight(0xffffff, 0.75);
-		spotLight1.position.set(0, 600, 100);
+		spotLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
+		spotLight1.position.set(0, 1200, 1200);
 		spotLight1.target.position.set(0, 0, 0);
 
-		var shadowSize = 1000;
+		var shadowSize = 1024;
 
 		spotLight1.castShadow = true;
 		spotLight1.shadow.mapSize.width = shadowSize * 2;
 		spotLight1.shadow.mapSize.height = shadowSize * 2;
-		spotLight1.shadow.camera.near = 1;
-		spotLight1.shadow.camera.far = 1000;
+		spotLight1.shadow.camera.near = 100;
+		spotLight1.shadow.camera.far = 2000;
 		spotLight1.shadow.camera.left = -shadowSize / 2;
 		spotLight1.shadow.camera.right = shadowSize / 2;
 		spotLight1.shadow.camera.top = shadowSize / 2;
@@ -211,66 +261,116 @@ Dog.Main = (function() {
 		if (USE_HELPERS) {
 			scene.add(new THREE.DirectionalLightHelper(spotLight1));
 			scene.add(new THREE.DirectionalLightHelper(spotLight2));
+			scene.add(new THREE.CameraHelper(spotLight1.shadow.camera));
 		}
 
 		// Add and additional AmbientLight
-		scene.add(new THREE.AmbientLight(0x555555));
+		scene.add(new THREE.AmbientLight(0xAAAAAA));
 	}
 
 
 
-	function addBox() {
+	function addBoxsTo(target) {
 
-		var geometry = new THREE.BoxBufferGeometry(BOX_WIDTH * 1.1, BOX_WIDTH, BOX_WIDTH);
 		var material = new THREE.MeshPhongMaterial({
-			color: 0x2194ce,
+			color: new THREE.Color('hsl(26, 7%, 81%)'),
 			shading: THREE.SmoothShading,
 			emissive: 0x000000,
 			specular: 0x666666,
 			shininess: 10,
 		});
 
-		var box = new THREE.Mesh(geometry, material);
+		var boxFrontGeometry = new THREE.BoxBufferGeometry(BOX_DIMS.w, BOX_DIMS.h, BOX_DIMS.d);
 
-		box.receiveShadow = true;
-
-		scene.add(box);
+		var boxFront = new THREE.Mesh(boxFrontGeometry, material);
+		boxFront.receiveShadow = true;
+		boxFront.castShadow = true;
+		target.add(boxFront);
 	}
 
-	function addElement() {
+	function addElementBlue() {
 
-		if (elements.length < ELEMENTS_MAX) {
+		if (elementsBlue.length < ELEMENTS_MAX) {
+
+			var material = new THREE.MeshPhongMaterial({
+				color: new THREE.Color('hsl(' + Dog.Utils.randomInt(hueBlue - 10, hueBlue + 10) + ', 60%, ' + Dog.Utils.randomInt(40, 70) + '%)'),
+				shading: THREE.SmoothShading,
+				emissive: 0x000000,
+				specular: 0x333333,
+				shininess: 10,
+			});
 
 
-
-			var element = new THREE.Mesh(SPHERE_GEOMETRY, SPHERE_MATERIAL);
+			var element = new THREE.Mesh(SPHERE_GEOMETRY, material);
 
 			element.restart = function() {
-				this.scale.x = this.scale.y = this.scale.z = SCALE_MIN;
-				this.position.x = Dog.Utils.randomRange(-(BOX_WIDTH / 2), BOX_WIDTH / 2);
-				this.position.y = (BOX_WIDTH / 2) + (SPHERE_RADIUS * this.scale.x);
-				this.position.z = -(BOX_WIDTH / 2);
+				this.scale.x = this.scale.y = this.scale.z = Dog.Utils.randomRange(SCALE_MIN, SCALE_MAX);
+				this.position.x = Dog.Utils.randomRange(-(BOX_DIMS.w / 2), BOX_DIMS.w / 2);
+				this.position.y = (BOX_DIMS.h / 2) + (SPHERE_RADIUS * this.scale.x);
+				this.position.z = -(BOX_DIMS.d / 2);
 				this.positionClone = this.position.clone();
 				this.velocity = new THREE.Vector3(0, 0, 2);
+				this.scaleClone = this.scale.clone();
 			}
 
 			element.restart();
 
-			// Handle scale
-			// element.scale.x = element.scale.y = element.scale.z = Dog.Utils.randomRange(SCALE_MIN, 1);
-			// element.scaleClone = element.scale.clone();
-
-			element.receiveShadow = true;
+			// Performance hit
+			// element.receiveShadow = true;
 			element.castShadow = true;
 
-
-			scene.add(element);
+			waterfallBlue.add(element);
 
 			if (USE_HELPERS) element.add(new THREE.AxisHelper(25));
 
-			elements.push(element);
+			elementsBlue.push(element);
 		} else {
-			console.log('Main.js', 'HIT ELEMENTS_MAX');
+			clearInterval(intervalBlue);
+		}
+	}
+
+	function addElementOrange() {
+
+		if (elementsOrange.length < ELEMENTS_MAX) {
+			204 - 10, 204 + 10
+
+			var material = new THREE.MeshPhongMaterial({
+				// HSL(8, 76%, 39%)
+				color: new THREE.Color('hsl(' + Dog.Utils.randomInt(hueOrange - 10, hueOrange + 10) + ', 76%, ' + Dog.Utils.randomInt(30, 50) + '%)'),
+				shading: THREE.SmoothShading,
+				emissive: 0x000000,
+				specular: 0x333333,
+				shininess: 10,
+				// transparent: true,
+				// opacity: 0.9,
+				// side: THREE.DoubleSide,
+			});
+
+
+			var element = new THREE.Mesh(SPHERE_GEOMETRY, material);
+
+			element.restart = function() {
+				this.scale.x = this.scale.y = this.scale.z = Dog.Utils.randomRange(SCALE_MIN, SCALE_MAX);
+				this.position.x = Dog.Utils.randomRange(-(BOX_DIMS.w / 2), BOX_DIMS.w / 2);
+				this.position.y = -((BOX_DIMS.h / 2) + (SPHERE_RADIUS * this.scale.x));
+				this.position.z = -(BOX_DIMS.d / 2);
+				this.positionClone = this.position.clone();
+				this.velocity = new THREE.Vector3(0, 0, 2);
+				this.scaleClone = this.scale.clone();
+			}
+
+			element.restart();
+
+			// element.receiveShadow = true;
+			element.castShadow = true;
+
+			waterfallOrange.add(element);
+
+			if (USE_HELPERS) element.add(new THREE.AxisHelper(25));
+
+			elementsOrange.push(element);
+		} else {
+			clearInterval(intervalOrange);
 		}
 	}
 
@@ -287,17 +387,18 @@ Dog.Main = (function() {
 		var floor = new THREE.Mesh(floorGeometry, floorMaterial);
 		floor.receiveShadow = true;
 		floor.rotation.x = -Math.PI / 2;
-		floor.position.y = -200.1;
+		floor.position.y = -(BOX_DIMS.h / 2);
 		scene.add(floor);
 	}
 
 	function addSkyBox() {
 		var skyBoxWidth = 2000;
 		var skybox = new THREE.Mesh(new THREE.BoxGeometry(skyBoxWidth, skyBoxWidth, skyBoxWidth), new THREE.MeshBasicMaterial({
-			color: 0xFFFFFF,
+			// color: 0xBBBBBB,
+			color: new THREE.Color('hsl(354, 7%, 71%)'),
+			// HSL(354, 7%, 71%)
 			side: THREE.BackSide,
 		}));
-		// skybox.position.y = (skyBoxWidth / 2) - (BOX_WIDTH);
 		skybox.receiveShadow = true;
 		scene.add(skybox);
 	}
@@ -307,7 +408,8 @@ Dog.Main = (function() {
 
 		if (howManyTimes !== ONCE) requestAnimationFrame(render);
 
-		animateElements();
+		animateElementsBlue();
+		animateElementsOrange();
 		// elementsContainer.rotation.y -= 0.01;
 
 		renderer.clear();
