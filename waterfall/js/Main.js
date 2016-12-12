@@ -9,9 +9,6 @@ Dog.Main = (function() {
 	var getCanvasImageData = false;
 	var ONCE = 'once';
 
-	// texture vars
-	var textureBumpMapLoader, textureMapBump;
-
 	// Should scene show helpers
 	var USE_HELPERS = false;
 
@@ -95,13 +92,6 @@ Dog.Main = (function() {
 		// add window resize handler
 		window.addEventListener('resize', onWindowResize, false);
 
-		// load images
-		textureBumpMapLoader.load('./img/logo_dog.png', function(texture) {
-			textureMapBump = texture;
-
-			init();
-		});
-
 		// add container
 		elementsContainer = new THREE.Object3D();
 		scene.add(elementsContainer);
@@ -115,6 +105,8 @@ Dog.Main = (function() {
 		elementsContainer.add(waterfallOrange);
 
 		if (USE_HELPERS) scene.add(new THREE.AxisHelper(500));
+
+		init();
 	}
 
 	function init() {
