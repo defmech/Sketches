@@ -6,6 +6,7 @@ if (Dog.WebGLDetect.canProceed)
 			"../libs/three.min.js",
 			"../libs//OrbitControls.js",
 			"../libs/TweenMax.min.js",
+			"../libs/CCapture.all.min.js",
 			"./js/Utils.js",
 			"./js/Main.js"
 		],

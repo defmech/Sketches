@@ -54,6 +54,12 @@ Dog.Main = (function() {
 	var intervalBlue;
 	var intervalOrange;
 
+	// Capture
+	var capturer = new CCapture({
+		format: 'webm'
+	});
+	var isCapturing = false;
+
 
 	function setup() {
 
@@ -189,8 +195,26 @@ Dog.Main = (function() {
 				case 67: // c
 					logCameraPosotion();
 					break;
+				case 82: // r
+					handleKeyboardR();
+					break;
 			}
 		});
+	}
+
+	function handleKeyboardR(event) {
+		console.log('Main.js', 'handleKeyboardR');
+		if (!isCapturing) {
+			isCapturing = true;
+			capturer.start();
+
+		} else {
+			isCapturing = false;
+			capturer.stop();
+
+			// default save, will download automatically a file called {name}.extension (webm/gif/tar)
+			capturer.save();
+		}
 	}
 
 	function logCameraPosotion() {
@@ -407,6 +431,8 @@ Dog.Main = (function() {
 		renderer.clear();
 		renderer.render(scene, camera);
 		orbitControls.update();
+
+		capturer.capture(renderer.domElement);
 
 		if (getCanvasImageData === true) {
 			canvasImageData = renderer.domElement.toDataURL();
