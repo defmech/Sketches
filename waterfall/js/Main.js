@@ -35,7 +35,7 @@ Dog.Main = (function() {
 
 	var OVERFLOW = BOX_DIMS.h / 2;
 
-	var ELEMENTS_MAX = 256;
+	var ELEMENTS_MAX = 1;
 
 	var SCALE_MIN = 0.1;
 	var SCALE_MAX = 1;
@@ -50,6 +50,11 @@ Dog.Main = (function() {
 	var waterfallOrange;
 
 	var SPHERE_GEOMETRY = new THREE.SphereBufferGeometry(SPHERE_RADIUS, 32, 32);
+
+	var material = new THREE.ShaderMaterial({
+		vertexShader: document.getElementById('vertexShader').textContent,
+		fragmentShader: document.getElementById('fragmentShader').textContent
+	});
 
 	var intervalBlue;
 	var intervalOrange;
@@ -121,8 +126,8 @@ Dog.Main = (function() {
 		addLighting();
 		// addFloor();
 		addSkyBox();
-		addBoxsTo(waterfallBlue);
-		addBoxsTo(waterfallOrange);
+		// addBoxsTo(waterfallBlue);
+		// addBoxsTo(waterfallOrange);
 		initAnimation();
 
 		// init keyboard listener
@@ -308,13 +313,13 @@ Dog.Main = (function() {
 
 		if (elementsBlue.length < ELEMENTS_MAX) {
 
-			var material = new THREE.MeshPhongMaterial({
-				color: new THREE.Color('hsl(' + Dog.Utils.randomInt(hueBlue - 10, hueBlue + 10) + ', 60%, ' + Dog.Utils.randomInt(40, 70) + '%)'),
-				shading: THREE.SmoothShading,
-				emissive: 0x000000,
-				specular: 0x333333,
-				shininess: 10,
-			});
+			// var material = new THREE.MeshPhongMaterial({
+			// 	color: new THREE.Color('hsl(' + Dog.Utils.randomInt(hueBlue - 10, hueBlue + 10) + ', 60%, ' + Dog.Utils.randomInt(40, 70) + '%)'),
+			// 	shading: THREE.SmoothShading,
+			// 	emissive: 0x000000,
+			// 	specular: 0x333333,
+			// 	shininess: 10,
+			// });
 
 
 			var element = new THREE.Mesh(SPHERE_GEOMETRY, material);
@@ -350,17 +355,17 @@ Dog.Main = (function() {
 		if (elementsOrange.length < ELEMENTS_MAX) {
 			204 - 10, 204 + 10
 
-			var material = new THREE.MeshPhongMaterial({
-				// HSL(8, 76%, 39%)
-				color: new THREE.Color('hsl(' + Dog.Utils.randomInt(hueOrange - 10, hueOrange + 10) + ', 76%, ' + Dog.Utils.randomInt(30, 50) + '%)'),
-				shading: THREE.SmoothShading,
-				emissive: 0x000000,
-				specular: 0x333333,
-				shininess: 10,
-				// transparent: true,
-				// opacity: 0.9,
-				// side: THREE.DoubleSide,
-			});
+			// var material = new THREE.MeshPhongMaterial({
+			// 	// HSL(8, 76%, 39%)
+			// 	color: new THREE.Color('hsl(' + Dog.Utils.randomInt(hueOrange - 10, hueOrange + 10) + ', 76%, ' + Dog.Utils.randomInt(30, 50) + '%)'),
+			// 	shading: THREE.SmoothShading,
+			// 	emissive: 0x000000,
+			// 	specular: 0x333333,
+			// 	shininess: 10,
+			// 	// transparent: true,
+			// 	// opacity: 0.9,
+			// 	// side: THREE.DoubleSide,
+			// });
 
 
 			var element = new THREE.Mesh(SPHERE_GEOMETRY, material);
@@ -424,8 +429,8 @@ Dog.Main = (function() {
 
 		if (howManyTimes !== ONCE) requestAnimationFrame(render);
 
-		animateElementsBlue();
-		animateElementsOrange();
+		// animateElementsBlue();
+		// animateElementsOrange();
 		// elementsContainer.rotation.y -= 0.01;
 
 		renderer.clear();
